@@ -66,7 +66,8 @@ class MiniMaxProvider implements AIProvider {
       system: systemPrompt,
       messages: [{ role: 'user', content: prompt }]
     });
-    return response.content[0]?.type === 'text' ? response.content[0].text : '';
+    const textBlock = response.content.find((block: any) => block.type === 'text');
+    return textBlock?.text || '';
   }
 }
 

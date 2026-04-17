@@ -46,7 +46,7 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req: AuthRe
     if (req.file.mimetype === 'application/pdf') {
       const pdfParse = await import('pdfjs-dist/legacy/build/pdf.mjs');
       const data = await fs.promises.readFile(req.file.path);
-      const pdf = await pdfParse.getDocument({ data }).promise;
+      const pdf = await pdfParse.getDocument({ data: new Uint8Array(data) }).promise;
       const textParts: string[] = [];
       
       for (let i = 1; i <= pdf.numPages; i++) {

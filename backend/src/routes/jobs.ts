@@ -234,7 +234,11 @@ router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
       keywords: req.query.keywords,
       location: req.query.location || '',
       remote: req.query.remote === 'true',
-      sources: req.query.sources ? (req.query.sources as string).split(',') : ['jooble']
+      sources: req.query.sources 
+        ? (Array.isArray(req.query.sources) 
+            ? req.query.sources as string[] 
+            : (req.query.sources as string).split(','))
+        : ['jooble']
     });
 
     if (!keywords.trim()) {
