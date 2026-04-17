@@ -6,6 +6,14 @@ import { getAIService } from '../services/ai.js';
 
 const router = Router();
 
+function stripMarkdownJson(text: string): string {
+  const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+  if (match) return match[1].trim();
+  const jsMatch = text.match(/```\s*([\s\S]*?)\s*```/);
+  if (jsMatch) return jsMatch[1].trim();
+  return text.trim();
+}
+
 router.post('/tailor', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const tailorSchema = z.object({
@@ -28,8 +36,9 @@ router.post('/tailor', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const aiService = getAIService();
-    const cvText = JSON.stringify(JSON.parse(baseCv.parsedData), null, 2);
+    const cvText = JSON.stringify(JSON.parse(stripMarkdownJson(baseCv.parsedData)), null, 2);
     const tailoredCV = await aiService.tailorCV(cvText, jobDescription);
+    const cleanedCV = stripMarkdownJson(tailoredCV);
 
     const matchScore = await aiService.calculateMatchScore(cvText, jobDescription);
 
@@ -38,14 +47,14 @@ router.post('/tailor', authMiddleware, async (req: AuthRequest, res) => {
         userId: req.userId!,
         baseCvId,
         jobId,
-        customizedData: tailoredCV,
+        customizedData: cleanedCV,
         matchScore
       }
     });
 
     res.json({
       id: customization.id,
-      tailoredCV: JSON.parse(tailoredCV),
+      tailoredCV: JSON.parse(cleanedCV),
       matchScore,
       createdAt: customization.createdAt
     });
@@ -81,7 +90,7 @@ router.post('/cover-letter', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const aiService = getAIService();
-    const cvText = JSON.stringify(JSON.parse(baseCv.parsedData), null, 2);
+    const cvText = JSON.stringify(JSON.parse(stripMarkdownJson(baseCv.parsedData)), null, 2);
     const coverLetter = await aiService.generateCoverLetter(
       cvText,
       jobDescription,
@@ -120,7 +129,7 @@ router.get('/match-score', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const aiService = getAIService();
-    const cvText = JSON.stringify(JSON.parse(baseCv.parsedData), null, 2);
+    const cvText = JSON.stringify(JSON.parse(stripMarkdownJson(baseCv.parsedData)), null, 2);
     const matchScore = await aiService.calculateMatchScore(cvText, jobDescription);
 
     res.json({ matchScore });
