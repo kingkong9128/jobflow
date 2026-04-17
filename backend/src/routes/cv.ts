@@ -10,6 +10,14 @@ import { getAIService } from '../services/ai.js';
 
 const router = Router();
 
+function stripMarkdownJson(text: string): string {
+  const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+  if (match) return match[1].trim();
+  const jsMatch = text.match(/```\s*([\s\S]*?)\s*```/);
+  if (jsMatch) return jsMatch[1].trim();
+  return text.trim();
+}
+
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -67,7 +75,8 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req: AuthRe
     }
 
     const aiService = getAIService();
-    const parsedData = await aiService.parseCV(cvText);
+    const rawParsedData = await aiService.parseCV(cvText);
+    const parsedData = stripMarkdownJson(rawParsedData);
 
     const baseCv = await prisma.baseCv.create({
       data: {
@@ -108,7 +117,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
     res.json({
       cvs: baseCvs.map(cv => ({
         ...cv,
-        parsedData: JSON.parse(cv.parsedData)
+        parsedData: JSON.parse(stripMarkdownJson(cv.parsedData))
       }))
     });
   } catch (error) {
@@ -130,7 +139,7 @@ router.get('/:id', authMiddleware, async (req: AuthRequest, res) => {
 
     res.json({
       ...cv,
-      parsedData: JSON.parse(cv.parsedData)
+      parsedData: JSON.parse(stripMarkdownJson(cv.parsedData))
     });
   } catch (error) {
     console.error('Get CV error:', error);
@@ -172,7 +181,7 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
 
     res.json({
       ...updatedCv,
-      parsedData: JSON.parse(updatedCv.parsedData)
+      parsedData: JSON.parse(stripMarkdownJson(updatedCv.parsedData))
     });
   } catch (error) {
     console.error('Update CV error:', error);
