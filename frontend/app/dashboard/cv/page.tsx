@@ -125,13 +125,32 @@ export default function CVPage() {
               </div>
             </div>
             {!editing ? (
-              <button
-                onClick={() => setEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                <Edit2 size={18} />
-                Edit
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                >
+                  <Edit2 size={18} />
+                  Edit
+                </button>
+                <button
+                  onClick={async () => {
+                    if (confirm('Delete this CV? This cannot be undone.')) {
+                      try {
+                        await cvApi.delete(cv.id);
+                        setCv(null);
+                        setParsedData(null);
+                      } catch (err) {
+                        setError('Failed to delete CV');
+                      }
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"
+                >
+                  <X size={18} />
+                  Delete
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button

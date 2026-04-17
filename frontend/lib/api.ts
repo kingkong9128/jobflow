@@ -131,6 +131,9 @@ export const cvApi = {
     const { data } = await api.put(`/cv/${id}`, { parsedData });
     return data;
   },
+  delete: async (id: string) => {
+    await api.delete(`/cv/${id}`);
+  },
   getFillData: async () => {
     const { data } = await api.get('/cv/fill-data');
     return data;

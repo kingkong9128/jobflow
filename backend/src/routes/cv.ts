@@ -223,4 +223,32 @@ router.get('/fill-data', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const cv = await prisma.baseCv.findFirst({
+      where: { id: req.params.id, userId: req.userId }
+    });
+
+    if (!cv) {
+      res.status(404).json({ error: 'CV not found' });
+      return;
+    }
+
+    await prisma.baseCv.delete({
+      where: { id: req.params.id }
+    });
+
+    if (cv.filePath) {
+      try {
+        await fs.promises.unlink(cv.filePath);
+      } catch {}
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete CV error:', error);
+    res.status(500).json({ error: 'Failed to delete CV' });
+  }
+});
+
 export default router;
