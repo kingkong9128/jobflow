@@ -1,13 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { Search, FileText, Briefcase, Bell, LogOut } from 'lucide-react';
-import type { User } from '@/lib/auth';
-
-interface DashboardNavProps {
-  user: User;
-}
+import { usePathname } from 'next/navigation';
+import { Search, FileText, Briefcase, Bell } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard/jobs', label: 'Jobs', icon: Search },
@@ -16,14 +11,8 @@ const navItems = [
   { href: '/dashboard/alerts', label: 'Alerts', icon: Bell },
 ];
 
-export default function DashboardNav({ user }: DashboardNavProps) {
+export default function DashboardNav() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    router.push('/auth/login');
-  };
 
   return (
     <nav className="bg-white border-b border-gray-200">
@@ -53,16 +42,6 @@ export default function DashboardNav({ user }: DashboardNavProps) {
                 );
               })}
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">{user.email}</span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
-              <LogOut size={18} />
-              Logout
-            </button>
           </div>
         </div>
       </div>
