@@ -75,8 +75,7 @@ router.post('/upload', authMiddleware, upload.single('file'), async (req: AuthRe
     }
 
     const aiService = getAIService();
-    const rawParsedData = await aiService.parseCV(cvText);
-    const parsedData = stripMarkdownJson(rawParsedData);
+    const parsedData = await aiService.parseCV(cvText);
 
     const baseCv = await prisma.baseCv.create({
       data: {

@@ -1,30 +1,202 @@
-import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { config } from 'dotenv';
 
 config();
 
+const CV_SCHEMA = {
+  name: "parse_cv",
+  description: "Parse a CV/resume and extract structured information",
+  input: {
+    type: "object",
+    properties: {
+      name: { type: "string", description: "Full name" },
+      email: { type: "string", description: "Email address" },
+      phone: { type: "string", description: "Phone number" },
+      location: { type: "string", description: "City, Country" },
+      summary: { type: "string", description: "Professional summary or objective" },
+      experience: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            company: { type: "string" },
+            location: { type: "string" },
+            startDate: { type: "string" },
+            endDate: { type: "string" },
+            description: { type: "string" }
+          },
+          required: ["title", "company", "description"]
+        }
+      },
+      education: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            degree: { type: "string" },
+            institution: { type: "string" },
+            location: { type: "string" },
+            graduationDate: { type: "string" },
+            gpa: { type: "string" },
+            grade: { type: "string" },
+            highlights: { type: "array", items: { type: "string" } }
+          },
+          required: ["degree", "institution"]
+        }
+      },
+      skills: { type: "array", items: { type: "string" } },
+      languages: { type: "array", items: { type: "string" } },
+      certifications: { type: "array", items: { type: "string" } },
+      projects: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            description: { type: "string" },
+            technologies: { type: "array", items: { type: "string" } }
+          }
+        }
+      },
+      achievements: { type: "array", items: { type: "string" } }
+    },
+    required: ["name", "email", "experience", "education", "skills"]
+  }
+};
+
+const TAILOR_CV_SCHEMA = {
+  name: "tailor_cv",
+  description: "Tailor a CV for a specific job description",
+  input: {
+    type: "object",
+    properties: {
+      name: { type: "string", description: "Full name" },
+      email: { type: "string", description: "Email address" },
+      phone: { type: "string", description: "Phone number" },
+      location: { type: "string", description: "City, Country" },
+      summary: { type: "string", description: "Professional summary tailored to the job" },
+      experience: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            company: { type: "string" },
+            location: { type: "string" },
+            startDate: { type: "string" },
+            endDate: { type: "string" },
+            description: { type: "string" }
+          },
+          required: ["title", "company", "description"]
+        }
+      },
+      education: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            degree: { type: "string" },
+            institution: { type: "string" },
+            location: { type: "string" },
+            graduationDate: { type: "string" },
+            gpa: { type: "string" },
+            grade: { type: "string" },
+            highlights: { type: "array", items: { type: "string" } }
+          },
+          required: ["degree", "institution"]
+        }
+      },
+      skills: { type: "array", items: { type: "string" } },
+      languages: { type: "array", items: { type: "string" } },
+      certifications: { type: "array", items: { type: "string" } },
+      projects: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            description: { type: "string" },
+            technologies: { type: "array", items: { type: "string" } }
+          }
+        }
+      },
+      achievements: { type: "array", items: { type: "string" } }
+    },
+    required: ["name", "email", "experience", "education", "skills"]
+  }
+};
+
 interface AIProvider {
   complete(prompt: string, systemPrompt?: string): Promise<string>;
+  completeWithJson<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T>;
 }
 
-class OpenAIProvider implements AIProvider {
-  private client: OpenAI;
+class MiniMaxProvider implements AIProvider {
+  private client: Anthropic;
 
   constructor(apiKey?: string) {
-    if (!apiKey) throw new Error('OpenAI API key not provided');
-    this.client = new OpenAI({ apiKey });
+    if (!apiKey) throw new Error('MiniMax API key not provided');
+    this.client = new Anthropic({
+      apiKey,
+      baseURL: process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/anthropic'
+    });
   }
 
   async complete(prompt: string, systemPrompt = 'You are a helpful assistant.'): Promise<string> {
-    const response = await this.client.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ]
+    const model = process.env.MINIMAX_MODEL || 'MiniMax-M2.7';
+    const response = await this.client.messages.create({
+      model,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: prompt }]
     });
-    return response.choices[0]?.message?.content || '';
+    for (const block of response.content) {
+      if (block.type === 'text') {
+        return block.text;
+      }
+    }
+    return '';
+  }
+
+  async completeWithJson<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
+    const model = process.env.MINIMAX_MODEL || 'MiniMax-M2.7';
+    
+    const response = await this.client.messages.create({
+      model,
+      max_tokens: 8192,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+      tools: [
+        {
+          name: schema.name,
+          description: schema.description,
+          input_schema: schema.input
+        }
+      ],
+      tool_choice: {
+        type: 'tool',
+        name: schema.name
+      }
+    });
+
+    for (const block of response.content) {
+      if (block.type === 'tool_use') {
+        return block.input as T;
+      }
+    }
+
+    for (const block of response.content) {
+      if (block.type === 'text') {
+        try {
+          return JSON.parse(block.text) as T;
+        } catch {
+          throw new Error(`Failed to parse JSON response: ${block.text}`);
+        }
+      }
+    }
+
+    throw new Error('No valid response from model');
   }
 }
 
@@ -45,58 +217,53 @@ class AnthropicProvider implements AIProvider {
     });
     return response.content[0]?.type === 'text' ? response.content[0].text : '';
   }
+
+  async completeWithJson<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
+    const response = await this.client.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 8192,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+      tools: [
+        {
+          name: schema.name,
+          description: schema.description,
+          input_schema: schema.input
+        }
+      ],
+      tool_choice: {
+        type: 'tool',
+        name: schema.name
+      }
+    });
+
+    for (const block of response.content) {
+      if (block.type === 'tool_use') {
+        return block.input as T;
+      }
+    }
+
+    throw new Error('No tool response from model');
+  }
 }
 
-class MiniMaxProvider implements AIProvider {
-  private client: Anthropic;
-
-  constructor(apiKey?: string) {
-    if (!apiKey) throw new Error('MiniMax API key not provided');
-    this.client = new Anthropic({
-      apiKey,
-      baseURL: process.env.MINIMAX_BASE_URL || 'https://api.minimaxi.com/anthropic'
-    });
+class OpenAIProvider implements AIProvider {
+  async complete(prompt: string, systemPrompt = 'You are a helpful assistant.'): Promise<string> {
+    throw new Error('OpenAI provider does not support structured output');
   }
 
-  async complete(prompt: string, systemPrompt = 'You are a helpful assistant.'): Promise<string> {
-    const model = process.env.MINIMAX_MODEL || 'MiniMax-M2.7';
-    const response = await this.client.messages.create({
-      model,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: prompt }]
-    });
-    const textBlock = response.content.find((block: any) => block.type === 'text');
-    return textBlock?.text || '';
+  async completeWithJson<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
+    throw new Error('OpenAI provider does not support structured output');
   }
 }
 
 class OpenRouterProvider implements AIProvider {
-  private baseUrl = 'https://openrouter.ai/api/v1';
-  private apiKey: string;
-
-  constructor(apiKey?: string) {
-    if (!apiKey) throw new Error('OpenRouter API key not provided');
-    this.apiKey = apiKey;
+  async complete(prompt: string, systemPrompt = 'You are a helpful assistant.'): Promise<string> {
+    throw new Error('OpenRouter provider does not support structured output');
   }
 
-  async complete(prompt: string, systemPrompt = 'You are a helpful assistant.'): Promise<string> {
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'anthropic/claude-3-sonnet',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ]
-      })
-    });
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || '';
+  async completeWithJson<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
+    throw new Error('OpenRouter provider does not support structured output');
   }
 }
 
@@ -110,13 +277,47 @@ interface AIServiceConfig {
   defaultProvider?: AIProviderType;
 }
 
+export interface ParsedCV {
+  name: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  summary?: string;
+  experience: Array<{
+    title: string;
+    company: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    description: string;
+  }>;
+  education: Array<{
+    degree: string;
+    institution: string;
+    location?: string;
+    graduationDate?: string;
+    gpa?: string;
+    grade?: string;
+    highlights?: string[];
+  }>;
+  skills: string[];
+  languages?: string[];
+  certifications?: string[];
+  projects?: Array<{
+    name: string;
+    description?: string;
+    technologies?: string[];
+  }>;
+  achievements?: string[];
+}
+
 export class AIService {
   private providers: Map<AIProviderType, AIProvider> = new Map();
   private defaultProvider: AIProviderType;
 
   constructor(config: AIServiceConfig) {
     if (config.openaiApiKey) {
-      this.providers.set('openai', new OpenAIProvider(config.openaiApiKey));
+      this.providers.set('openai', new OpenAIProvider());
     }
     if (config.anthropicApiKey) {
       this.providers.set('anthropic', new AnthropicProvider(config.anthropicApiKey));
@@ -125,7 +326,7 @@ export class AIService {
       this.providers.set('minimax', new MiniMaxProvider(config.minimaxApiKey));
     }
     if (config.openrouterApiKey) {
-      this.providers.set('openrouter', new OpenRouterProvider(config.openrouterApiKey));
+      this.providers.set('openrouter', new OpenRouterProvider());
     }
 
     this.defaultProvider = config.defaultProvider || 'anthropic';
@@ -148,49 +349,17 @@ export class AIService {
     return this.getProvider(provider).complete(prompt, systemPrompt);
   }
 
-  async parseCV(cvText: string): Promise<string> {
-    const systemPrompt = `You are a professional resume parser. Extract ALL information from the resume and return ONLY valid JSON with this exact structure:
-{
-  "name": "Full Name",
-  "email": "email@example.com",
-  "phone": "+1234567890",
-  "location": "City, Country",
-  "summary": "Professional summary or objective",
-  "experience": [
-    {
-      "title": "Job Title",
-      "company": "Company Name",
-      "location": "City, State/Country",
-      "startDate": "Month YYYY or YYYY",
-      "endDate": "Month YYYY or Present or null",
-      "description": "Full job description, responsibilities, achievements, technologies used"
-    }
-  ],
-  "education": [
-    {
-      "degree": "Degree Name (e.g., B.S. Computer Science)",
-      "institution": "University/School Name",
-      "location": "City, Country",
-      "graduationDate": "Month YYYY or YYYY",
-      "gpa": "GPA (e.g., 3.8/4.0) or null if not mentioned",
-      "grade": "Grade/Percentage or null if not mentioned",
-      "highlights": ["Notable achievements, awards, relevant coursework"]
-    }
-  ],
-  "skills": ["skill1", "skill2", "skill3"],
-  "languages": ["language1", "language2"],
-  "certifications": ["Certification 1", "Certification 2"],
-  "projects": [
-    {
-      "name": "Project Name",
-      "description": "Project description",
-      "technologies": ["Tech1", "Tech2"]
-    }
-  ]
-}
-Extract EVERYTHING - do not omit any information. If a field is not found, use null. Arrays can be empty []. Do not add any explanatory text, just the JSON.`;
+  async completeWithJson<T>(systemPrompt: string, userPrompt: string, schema: any, provider?: AIProviderType): Promise<T> {
+    return this.getProvider(provider).completeWithJson<T>(systemPrompt, userPrompt, schema);
+  }
 
-    return this.complete(cvText, systemPrompt);
+  async parseCV(cvText: string): Promise<string> {
+    const systemPrompt = `You are a professional resume parser. Extract ALL information from the resume and return it using the parse_cv tool. Extract EVERYTHING - do not omit any information. If a field is not found, use null or empty arrays.`;
+
+    const userPrompt = `Extract structured information from this CV/resume:\n\n${cvText}`;
+
+    const result = await this.completeWithJson<ParsedCV>(systemPrompt, userPrompt, CV_SCHEMA);
+    return JSON.stringify(result);
   }
 
   async tailorCV(cvText: string, jobDescription: string): Promise<string> {
@@ -198,21 +367,17 @@ Extract EVERYTHING - do not omit any information. If a field is not found, use n
 - Highlight relevant experience matching job requirements
 - Include keywords from the job description
 - Reorder experience to prioritize most relevant roles
-- Keep the EXACT SAME JSON structure as the input resume
-- Return ONLY valid JSON - no markdown, no explanations, no text outside the JSON
-- The JSON must have: name, email, phone, location, summary, experience (array), education (array), skills (array), languages (array)
-- Experience objects must have: title, company, location, startDate, endDate, description
-- Education objects must have: degree, institution, location, graduationDate`;
+- Keep the EXACT SAME structure with all fields
+- Use the tailor_cv tool to return the result`;
 
-    const prompt = `Original Resume (JSON):
+    const userPrompt = `Original Resume (JSON):
 ${cvText}
 
 Job Description:
-${jobDescription}
+${jobDescription}`;
 
-IMPORTANT: Return ONLY valid JSON with the same structure as the original resume. No markdown wrapping, no explanatory text.`;
-
-    return this.complete(prompt, systemPrompt);
+    const result = await this.completeWithJson<ParsedCV>(systemPrompt, userPrompt, TAILOR_CV_SCHEMA);
+    return JSON.stringify(result);
   }
 
   async generateCoverLetter(cvText: string, jobDescription: string, companyName: string): Promise<string> {
@@ -221,11 +386,10 @@ IMPORTANT: Return ONLY valid JSON with the same structure as the original resume
 - Addresses the key requirements in the job description
 - Highlights specific achievements from the resume relevant to the role
 - Shows enthusiasm for the company and role
-- Uses a professional but personable tone
-- Return ONLY the cover letter text, no explanations`;
+- Uses a professional but personable tone`;
 
-    const prompt = `Resume:\n${cvText}\n\nJob Description:\n${jobDescription}\n\nCompany: ${companyName}`;
-    return this.complete(prompt, systemPrompt);
+    const userPrompt = `Resume:\n${cvText}\n\nJob Description:\n${jobDescription}\n\nCompany: ${companyName}`;
+    return this.complete(userPrompt, systemPrompt);
   }
 
   async calculateMatchScore(cvText: string, jobDescription: string): Promise<number> {
@@ -237,8 +401,8 @@ Consider:
 - Experience alignment
 - Education requirements`;
 
-    const prompt = `Resume:\n${cvText}\n\nJob Description:\n${jobDescription}`;
-    const result = await this.complete(prompt, systemPrompt);
+    const userPrompt = `Resume:\n${cvText}\n\nJob Description:\n${jobDescription}`;
+    const result = await this.complete(userPrompt, systemPrompt);
     const match = result.match(/\d+/);
     return match ? parseInt(match[0]) : 0;
   }

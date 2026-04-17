@@ -36,9 +36,8 @@ router.post('/tailor', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const aiService = getAIService();
-    const cvText = JSON.stringify(JSON.parse(stripMarkdownJson(baseCv.parsedData)), null, 2);
+    const cvText = JSON.stringify(JSON.parse(baseCv.parsedData), null, 2);
     const tailoredCV = await aiService.tailorCV(cvText, jobDescription);
-    const cleanedCV = stripMarkdownJson(tailoredCV);
 
     const matchScore = await aiService.calculateMatchScore(cvText, jobDescription);
 
@@ -47,14 +46,14 @@ router.post('/tailor', authMiddleware, async (req: AuthRequest, res) => {
         userId: req.userId!,
         baseCvId,
         jobId,
-        customizedData: cleanedCV,
+        customizedData: tailoredCV,
         matchScore
       }
     });
 
     res.json({
       id: customization.id,
-      tailoredCV: JSON.parse(cleanedCV),
+      tailoredCV: JSON.parse(tailoredCV),
       matchScore,
       createdAt: customization.createdAt
     });
@@ -90,7 +89,7 @@ router.post('/cover-letter', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const aiService = getAIService();
-    const cvText = JSON.stringify(JSON.parse(stripMarkdownJson(baseCv.parsedData)), null, 2);
+    const cvText = JSON.stringify(JSON.parse(baseCv.parsedData), null, 2);
     const coverLetter = await aiService.generateCoverLetter(
       cvText,
       jobDescription,
@@ -129,7 +128,7 @@ router.get('/match-score', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     const aiService = getAIService();
-    const cvText = JSON.stringify(JSON.parse(stripMarkdownJson(baseCv.parsedData)), null, 2);
+    const cvText = JSON.stringify(JSON.parse(baseCv.parsedData), null, 2);
     const matchScore = await aiService.calculateMatchScore(cvText, jobDescription);
 
     res.json({ matchScore });
