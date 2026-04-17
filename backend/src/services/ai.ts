@@ -48,31 +48,25 @@ class AnthropicProvider implements AIProvider {
 }
 
 class MiniMaxProvider implements AIProvider {
-  private apiKey: string;
-  private endpoint = 'https://api.minimax.chat/v1';
+  private client: Anthropic;
 
   constructor(apiKey?: string) {
     if (!apiKey) throw new Error('MiniMax API key not provided');
-    this.apiKey = apiKey;
+    this.client = new Anthropic({
+      apiKey,
+      baseURL: process.env.MINIMAX_BASE_URL || 'https://api.minimaxi.com/anthropic'
+    });
   }
 
   async complete(prompt: string, systemPrompt = 'You are a helpful assistant.'): Promise<string> {
-    const response = await fetch(`${this.endpoint}/text/chatcompletion_v2`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'MiniMax-Text-01',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt }
-        ]
-      })
+    const model = process.env.MINIMAX_MODEL || 'MiniMax-M2.7';
+    const response = await this.client.messages.create({
+      model,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: prompt }]
     });
-    const data = await response.json();
-    return data.choices?.[0]?.messages?.[0]?.text || '';
+    return response.content[0]?.type === 'text' ? response.content[0].text : '';
   }
 }
 
