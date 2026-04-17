@@ -285,6 +285,45 @@ router.get('/search', authMiddleware, async (req: AuthRequest, res) => {
 
     const uniqueResults = deduplicateJobs(results);
 
+    await Promise.all(
+      uniqueResults.map(job => 
+        prisma.savedJob.upsert({
+          where: {
+            userId_source_sourceId: {
+              userId: req.userId!,
+              source: job.source,
+              sourceId: String(job.sourceId)
+            }
+          },
+          update: {
+            title: job.title,
+            company: job.company || null,
+            location: job.location || null,
+            remote: job.remote || false,
+            description: job.description || null,
+            url: job.url || null,
+            salaryMin: job.salaryMin || null,
+            salaryMax: job.salaryMax || null,
+            postedAt: job.postedAt ? new Date(job.postedAt) : null
+          },
+          create: {
+            userId: req.userId!,
+            source: job.source,
+            sourceId: String(job.sourceId),
+            title: job.title,
+            company: job.company || null,
+            location: job.location || null,
+            remote: job.remote || false,
+            description: job.description || null,
+            url: job.url || null,
+            salaryMin: job.salaryMin || null,
+            salaryMax: job.salaryMax || null,
+            postedAt: job.postedAt ? new Date(job.postedAt) : null
+          }
+        }).catch(() => null)
+      )
+    );
+
     res.json({ 
       jobs: uniqueResults, 
       total: uniqueResults.length,
