@@ -149,35 +149,46 @@ export class AIService {
   }
 
   async parseCV(cvText: string): Promise<string> {
-    const systemPrompt = `You are a professional resume parser. Extract structured information from the resume and return ONLY valid JSON with this exact structure:
+    const systemPrompt = `You are a professional resume parser. Extract ALL information from the resume and return ONLY valid JSON with this exact structure:
 {
   "name": "Full Name",
   "email": "email@example.com",
   "phone": "+1234567890",
   "location": "City, Country",
-  "summary": "Professional summary",
+  "summary": "Professional summary or objective",
   "experience": [
     {
       "title": "Job Title",
       "company": "Company Name",
-      "location": "Location",
-      "startDate": "YYYY-MM-DD or Month YYYY",
-      "endDate": "YYYY-MM-DD or Present",
-      "description": "Job responsibilities and achievements"
+      "location": "City, State/Country",
+      "startDate": "Month YYYY or YYYY",
+      "endDate": "Month YYYY or Present or null",
+      "description": "Full job description, responsibilities, achievements, technologies used"
     }
   ],
   "education": [
     {
-      "degree": "Degree Name",
-      "institution": "University Name",
-      "location": "Location",
-      "graduationDate": "YYYY-MM-DD or Month YYYY"
+      "degree": "Degree Name (e.g., B.S. Computer Science)",
+      "institution": "University/School Name",
+      "location": "City, Country",
+      "graduationDate": "Month YYYY or YYYY",
+      "gpa": "GPA (e.g., 3.8/4.0) or null if not mentioned",
+      "grade": "Grade/Percentage or null if not mentioned",
+      "highlights": ["Notable achievements, awards, relevant coursework"]
     }
   ],
   "skills": ["skill1", "skill2", "skill3"],
-  "languages": ["language1", "language2"]
+  "languages": ["language1", "language2"],
+  "certifications": ["Certification 1", "Certification 2"],
+  "projects": [
+    {
+      "name": "Project Name",
+      "description": "Project description",
+      "technologies": ["Tech1", "Tech2"]
+    }
+  ]
 }
-If a field is not found, use null. Do not add any explanatory text, just the JSON.`;
+Extract EVERYTHING - do not omit any information. If a field is not found, use null. Arrays can be empty []. Do not add any explanatory text, just the JSON.`;
 
     return this.complete(cvText, systemPrompt);
   }

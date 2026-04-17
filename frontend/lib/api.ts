@@ -58,9 +58,18 @@ export interface ParsedCV {
     institution: string;
     location?: string;
     graduationDate?: string;
+    gpa?: string;
+    grade?: string;
+    highlights?: string[];
   }>;
   skills: string[];
-  languages: string[];
+  languages?: string[];
+  certifications?: string[];
+  projects?: Array<{
+    name: string;
+    description?: string;
+    technologies?: string[];
+  }>;
 }
 
 export interface BaseCV {

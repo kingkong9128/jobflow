@@ -224,7 +224,7 @@ export default function CVPage() {
             <div>
               <h3 className="text-lg font-semibold mb-3">Experience</h3>
               <div className="space-y-4">
-                {parsedData.experience.map((exp, i) => (
+                {parsedData.experience.map((exp: any, i: number) => (
                   <div key={i} className="p-4 bg-gray-50 rounded-lg">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -251,6 +251,22 @@ export default function CVPage() {
                           <p>{exp.company || '-'}</p>
                         )}
                       </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Location</label>
+                        {editing ? (
+                          <input
+                            value={exp.location || ''}
+                            onChange={(e) => handleExperienceChange(i, 'location', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        ) : (
+                          <p className="text-sm">{exp.location || '-'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Duration</label>
+                        <p className="text-sm">{exp.startDate || ''} - {exp.endDate || 'Present'}</p>
+                      </div>
                     </div>
                     <div className="mt-2">
                       <label className="block text-xs text-gray-500 mb-1">Description</label>
@@ -262,7 +278,7 @@ export default function CVPage() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         />
                       ) : (
-                        <p className="text-sm text-gray-600">{exp.description || '-'}</p>
+                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{exp.description || '-'}</p>
                       )}
                     </div>
                   </div>
@@ -274,7 +290,7 @@ export default function CVPage() {
             <div>
               <h3 className="text-lg font-semibold mb-3">Education</h3>
               <div className="space-y-4">
-                {parsedData.education.map((edu, i) => (
+                {parsedData.education.map((edu: any, i: number) => (
                   <div key={i} className="p-4 bg-gray-50 rounded-lg">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -301,7 +317,65 @@ export default function CVPage() {
                           <p>{edu.institution || '-'}</p>
                         )}
                       </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Location</label>
+                        {editing ? (
+                          <input
+                            value={edu.location || ''}
+                            onChange={(e) => handleEducationChange(i, 'location', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        ) : (
+                          <p className="text-sm">{edu.location || '-'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Graduation Date</label>
+                        {editing ? (
+                          <input
+                            value={edu.graduationDate || ''}
+                            onChange={(e) => handleEducationChange(i, 'graduationDate', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        ) : (
+                          <p className="text-sm">{edu.graduationDate || '-'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">GPA</label>
+                        {editing ? (
+                          <input
+                            value={edu.gpa || ''}
+                            onChange={(e) => handleEducationChange(i, 'gpa', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        ) : (
+                          <p className="text-sm">{edu.gpa || '-'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Grade/Percentage</label>
+                        {editing ? (
+                          <input
+                            value={edu.grade || ''}
+                            onChange={(e) => handleEducationChange(i, 'grade', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                        ) : (
+                          <p className="text-sm">{edu.grade || '-'}</p>
+                        )}
+                      </div>
                     </div>
+                    {edu.highlights && edu.highlights.length > 0 && (
+                      <div className="mt-2">
+                        <label className="block text-xs text-gray-500 mb-1">Highlights/Achievements</label>
+                        <ul className="text-sm text-gray-600 list-disc list-inside">
+                          {edu.highlights.map((h: string, idx: number) => (
+                            <li key={idx}>{h}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -327,6 +401,58 @@ export default function CVPage() {
                 </div>
               )}
             </div>
+
+            {/* Certifications */}
+            {parsedData.certifications && parsedData.certifications.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Certifications</h3>
+                <div className="flex flex-wrap gap-2">
+                  {parsedData.certifications.map((cert: string, i: number) => (
+                    <span key={i} className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm">
+                      {cert}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Projects */}
+            {parsedData.projects && parsedData.projects.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Projects</h3>
+                <div className="space-y-4">
+                  {parsedData.projects.map((proj: any, i: number) => (
+                    <div key={i} className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium">{proj.name}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{proj.description}</p>
+                      {proj.technologies && proj.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {proj.technologies.map((t: string, idx: number) => (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Languages */}
+            {parsedData.languages && parsedData.languages.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Languages</h3>
+                <div className="flex flex-wrap gap-2">
+                  {parsedData.languages.map((lang: string, i: number) => (
+                    <span key={i} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                      {lang}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
