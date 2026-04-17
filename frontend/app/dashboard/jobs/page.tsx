@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin, Briefcase, Bookmark, ExternalLink, Remote, Wand2, ChevronDown, X } from 'lucide-react';
+import { Search, MapPin, Briefcase, Bookmark, ExternalLink, Wifi, Wand2, ChevronDown, X } from 'lucide-react';
 import { jobApi, type Job } from '@/lib/api';
 
 const SOURCE_CONFIG = {
@@ -248,8 +248,8 @@ export default function JobsPage() {
                       <h3 className="text-xl font-semibold">{job.title}</h3>
                       {job.remote && (
                         <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                          <Remote size={12} />
-                          Remote
+                          <Wifi size={12} />
+                          Wifi
                         </span>
                       )}
                       <span className={`px-2 py-1 text-xs rounded-full ${sourceConfig.color}`}>

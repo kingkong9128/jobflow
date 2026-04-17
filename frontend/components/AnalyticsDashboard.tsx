@@ -149,7 +149,7 @@ export default function AnalyticsDashboard({ stats, applications }: AnalyticsPro
                         stroke={via === 'manual' ? '#4F46E5' : '#10B981'}
                         strokeWidth="4"
                         strokeDasharray={dashArr}
-                        strokeDashoffset={-acc.reduce((s, _, idx) => {
+                        strokeDashoffset={-acc.reduce((s: number, _: unknown, idx: number) => {
                           const p = (arr[idx - 1]?.[1] || 0) / total * 100;
                           return s + (idx === 0 ? 0 : p);
                         }, 0)}

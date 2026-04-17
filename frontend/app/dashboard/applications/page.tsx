@@ -187,9 +187,7 @@ export default function ApplicationsPage() {
 
       {view === 'analytics' ? (
         <AnalyticsDashboard stats={stats} applications={applications} />
-      ) : (
-        <>
-          {applications.length === 0 ? (
+      ) : applications.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
           <Briefcase size={48} className="mx-auto mb-4 opacity-50" />
           <p className="text-lg">No applications yet</p>
@@ -344,7 +342,6 @@ export default function ApplicationsPage() {
             );
           })}
         </div>
-        </>
       )}
 
       {showAddModal && (
@@ -410,3 +407,6 @@ export default function ApplicationsPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
