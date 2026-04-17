@@ -198,10 +198,20 @@ Extract EVERYTHING - do not omit any information. If a field is not found, use n
 - Highlight relevant experience matching job requirements
 - Include keywords from the job description
 - Reorder experience to prioritize most relevant roles
-- Keep the same JSON structure as the input resume
-- Return ONLY the tailored resume JSON`;
+- Keep the EXACT SAME JSON structure as the input resume
+- Return ONLY valid JSON - no markdown, no explanations, no text outside the JSON
+- The JSON must have: name, email, phone, location, summary, experience (array), education (array), skills (array), languages (array)
+- Experience objects must have: title, company, location, startDate, endDate, description
+- Education objects must have: degree, institution, location, graduationDate`;
 
-    const prompt = `Original Resume:\n${cvText}\n\nJob Description:\n${jobDescription}`;
+    const prompt = `Original Resume (JSON):
+${cvText}
+
+Job Description:
+${jobDescription}
+
+IMPORTANT: Return ONLY valid JSON with the same structure as the original resume. No markdown wrapping, no explanatory text.`;
+
     return this.complete(prompt, systemPrompt);
   }
 
