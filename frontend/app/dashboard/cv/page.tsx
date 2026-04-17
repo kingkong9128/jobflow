@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Upload, FileText, Check, X, Edit2, Save } from 'lucide-react';
 import { cvApi, type ParsedCV, type BaseCV } from '@/lib/api';
 
@@ -10,6 +10,21 @@ export default function CVPage() {
   const [parsedData, setParsedData] = useState<ParsedCV | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadCVs = async () => {
+      try {
+        const data = await cvApi.list();
+        if (data.cvs && data.cvs.length > 0) {
+          setCv(data.cvs[0]);
+          setParsedData(data.cvs[0].parsedData);
+        }
+      } catch (err) {
+        console.error('Failed to load CVs:', err);
+      }
+    };
+    loadCVs();
+  }, []);
 
   const handleFileUpload = useCallback(async (file: File) => {
     setUploading(true);

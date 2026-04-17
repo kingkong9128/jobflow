@@ -14,6 +14,7 @@ const SOURCE_CONFIG = {
 export default function JobsPage() {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [savedJobIds, setSavedJobIds] = useState<Map<string, string>>(new Map());
   const [search, setSearch] = useState('');
   const [location, setLocation] = useState('');
@@ -31,6 +32,7 @@ export default function JobsPage() {
   const loadSavedJobs = async () => {
     try {
       const data = await jobApi.saved();
+      setSavedJobs(data.jobs || []);
       const map = new Map<string, string>();
       data.jobs.forEach((j: Job & { id?: string }) => {
         if (j.id) map.set(`${j.source}-${j.sourceId}`, j.id);
@@ -199,11 +201,101 @@ export default function JobsPage() {
         </form>
       </div>
 
-      {!searched && (
+      {!searched && savedJobs.length === 0 && (
         <div className="text-center py-16 text-gray-500">
           <Briefcase size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg">Search for jobs to get started</p>
-          <p className="text-sm">Enter a job title and location to find opportunities</p>
+          <p className="text-lg">No saved jobs</p>
+          <p className="text-sm">Search for jobs to get started</p>
+        </div>
+      )}
+
+      {!searched && savedJobs.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-gray-500">{savedJobs.length} saved jobs</p>
+          </div>
+          <div className="space-y-4">
+            {savedJobs.map((job) => {
+              const key = `${job.source}-${job.sourceId}`;
+              const isSaved = savedJobIds.has(key);
+              const savedJobId = savedJobIds.get(key);
+              const sourceConfig = SOURCE_CONFIG[job.source as keyof typeof SOURCE_CONFIG] || SOURCE_CONFIG.jooble;
+              
+              return (
+                <div
+                  key={key}
+                  className="bg-white p-6 rounded-xl border border-gray-200 hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-semibold">{job.title}</h3>
+                        {job.remote && (
+                          <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                            <Wifi size={12} />
+                            Wifi
+                          </span>
+                        )}
+                        <span className={`px-2 py-1 text-xs rounded-full ${sourceConfig.color}`}>
+                          {sourceConfig.name}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-2">{job.company}</p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        {job.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={14} />
+                            {job.location}
+                          </span>
+                        )}
+                        {job.salaryMin && (
+                          <span className="text-green-600 font-medium">
+                            ${job.salaryMin.toLocaleString()}{job.salaryMax ? ` - $${job.salaryMax.toLocaleString()}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      {job.description && (
+                        <p className="mt-3 text-gray-700 line-clamp-2">{job.description}</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleSaveJob(job)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          isSaved
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Bookmark size={20} fill={isSaved ? 'currentColor' : 'none'} />
+                      </button>
+                      {isSaved && savedJobId && (
+                        <button
+                          onClick={() => handleTailor(savedJobId)}
+                          className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
+                        >
+                          <Wand2 size={18} />
+                          Tailor
+                        </button>
+                      )}
+                      {job.url && (
+                        <a
+                          href={job.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          <ExternalLink size={18} />
+                          Apply
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -214,103 +306,93 @@ export default function JobsPage() {
         </div>
       )}
 
-      {jobs.length > 0 && (
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-gray-500">{jobs.length} jobs found</p>
-          <div className="flex gap-2">
-            {Object.entries(SOURCE_CONFIG).filter(([key]) => 
-              jobs.some(j => j.source === key)
-            ).map(([key, config]) => (
-              <span key={key} className={`px-2 py-1 text-xs rounded-full ${config.color}`}>
-                {jobs.filter(j => j.source === key).length} from {config.name}
-              </span>
-            ))}
+      {searched && jobs.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-gray-500">{jobs.length} jobs found</p>
           </div>
-        </div>
-      )}
-
-      {jobs.length > 0 && (
-        <div className="space-y-4">
-          {jobs.map((job) => {
-            const key = `${job.source}-${job.sourceId}`;
-            const isSaved = savedJobIds.has(key);
-            const savedJobId = savedJobIds.get(key);
-            const sourceConfig = SOURCE_CONFIG[job.source as keyof typeof SOURCE_CONFIG] || SOURCE_CONFIG.jooble;
-            
-            return (
-              <div
-                key={key}
-                className="bg-white p-6 rounded-xl border border-gray-200 hover:border-primary/50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold">{job.title}</h3>
-                      {job.remote && (
-                        <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                          <Wifi size={12} />
-                          Wifi
+          <div className="space-y-4">
+            {jobs.map((job) => {
+              const key = `${job.source}-${job.sourceId}`;
+              const isSaved = savedJobIds.has(key);
+              const savedJobId = savedJobIds.get(key);
+              const sourceConfig = SOURCE_CONFIG[job.source as keyof typeof SOURCE_CONFIG] || SOURCE_CONFIG.jooble;
+              
+              return (
+                <div
+                  key={key}
+                  className="bg-white p-6 rounded-xl border border-gray-200 hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-semibold">{job.title}</h3>
+                        {job.remote && (
+                          <span className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                            <Wifi size={12} />
+                            Wifi
+                          </span>
+                        )}
+                        <span className={`px-2 py-1 text-xs rounded-full ${sourceConfig.color}`}>
+                          {sourceConfig.name}
                         </span>
+                      </div>
+                      <p className="text-gray-600 mb-2">{job.company}</p>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        {job.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin size={14} />
+                            {job.location}
+                          </span>
+                        )}
+                        {job.salaryMin && (
+                          <span className="text-green-600 font-medium">
+                            ${job.salaryMin.toLocaleString()}{job.salaryMax ? ` - $${job.salaryMax.toLocaleString()}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      {job.description && (
+                        <p className="mt-3 text-gray-700 line-clamp-2">{job.description}</p>
                       )}
-                      <span className={`px-2 py-1 text-xs rounded-full ${sourceConfig.color}`}>
-                        {sourceConfig.name}
-                      </span>
                     </div>
-                    <p className="text-gray-600 mb-2">{job.company}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      {job.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin size={14} />
-                          {job.location}
-                        </span>
-                      )}
-                      {job.salaryMin && (
-                        <span className="text-green-600 font-medium">
-                          ${job.salaryMin.toLocaleString()}{job.salaryMax ? ` - $${job.salaryMax.toLocaleString()}` : ''}
-                        </span>
-                      )}
-                    </div>
-                    {job.description && (
-                      <p className="mt-3 text-gray-700 line-clamp-2">{job.description}</p>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => toggleSaveJob(job)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isSaved
-                          ? 'bg-primary text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      <Bookmark size={20} fill={isSaved ? 'currentColor' : 'none'} />
-                    </button>
-                    {isSaved && savedJobId && (
+                    
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleTailor(savedJobId)}
-                        className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
+                        onClick={() => toggleSaveJob(job)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          isSaved
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
                       >
-                        <Wand2 size={18} />
-                        Tailor
+                        <Bookmark size={20} fill={isSaved ? 'currentColor' : 'none'} />
                       </button>
-                    )}
-                    {job.url && (
-                      <a
-                        href={job.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                      >
-                        <ExternalLink size={18} />
-                        Apply
-                      </a>
-                    )}
+                      {isSaved && savedJobId && (
+                        <button
+                          onClick={() => handleTailor(savedJobId)}
+                          className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
+                        >
+                          <Wand2 size={18} />
+                          Tailor
+                        </button>
+                      )}
+                      {job.url && (
+                        <a
+                          href={job.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                          <ExternalLink size={18} />
+                          Apply
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
