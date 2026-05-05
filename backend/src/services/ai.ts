@@ -209,8 +209,9 @@ class AnthropicProvider implements AIProvider {
   }
 
   async complete(prompt: string, systemPrompt = 'You are a helpful assistant.'): Promise<string> {
+    const model = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5';
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: 'user', content: prompt }]
@@ -219,8 +220,9 @@ class AnthropicProvider implements AIProvider {
   }
 
   async completeWithJson<T>(systemPrompt: string, userPrompt: string, schema: any): Promise<T> {
+    const model = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5';
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model,
       max_tokens: 8192,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],

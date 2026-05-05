@@ -11,10 +11,18 @@ import exportRoutes from './routes/export.js';
 import alertRoutes from './routes/alerts.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
+
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:4000',
+  'http://localhost:4001'
+];
+const extraOrigins = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:4001', 'http://localhost:4000'],
+  origin: [...defaultOrigins, ...extraOrigins],
   credentials: true
 }));
 
