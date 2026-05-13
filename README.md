@@ -26,7 +26,7 @@ JobFlow helps you discover jobs across multiple aggregators, customize your CV w
 npm run dev
 ```
 
-This starts both backend (port 3001) and frontend (port 3000).
+This starts both backend (port 4000) and frontend (port 3000).
 
 For all services (backend + frontend + landing page):
 ```bash
@@ -58,7 +58,7 @@ cd backend && npx prisma db push
 npm run dev
 
 # Or individually:
-npm run dev:backend  # http://localhost:3001
+npm run dev:backend  # http://localhost:4000
 npm run dev:frontend # http://localhost:3000
 ```
 
@@ -79,7 +79,9 @@ npm run dev:frontend # http://localhost:3000
 | `DATABASE_URL` | Yes | SQLite: `file:./jobflow.db` |
 | `JWT_SECRET` | Yes | Secret for JWT tokens |
 | `OPENAI_API_KEY` | One required | OpenAI GPT-4 |
-| `ANTHROPIC_API_KEY` | One required | Claude 3.5 Sonnet |
+| `ANTHROPIC_API_KEY` | One required | Anthropic Claude API key |
+| `ANTHROPIC_MODEL` | Optional | Claude model id (defaults to `claude-sonnet-4-5`) |
+| `CORS_ORIGINS` | Optional | Comma-separated extra origins (e.g. LAN IP for remote dev) |
 | `MINIMAX_API_KEY` | One required | MiniMax |
 | `OPENROUTER_API_KEY` | Optional | Fallback aggregator |
 | `JOOBLE_API_KEY` | Optional | Jooble job search |
