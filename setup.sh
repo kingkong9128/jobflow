@@ -33,16 +33,23 @@ echo -e "${GREEN}📦 Installing frontend dependencies...${NC}"
 cd frontend && npm install && cd ..
 
 # Setup database
+# Prisma's CLI loads .env from its own working directory, so we link the
+# repo-root .env into backend/ when running prisma so the schema can resolve
+# DATABASE_URL. Without this the db push silently fails ("Environment variable
+# not found: DATABASE_URL") even though the script's `set -e` doesn't catch it.
 echo -e "${GREEN}🗄️  Setting up database...${NC}"
+if [ ! -e backend/.env ]; then
+    ln -s ../.env backend/.env
+fi
 cd backend && npx prisma db push && cd ..
 
 echo ""
 echo -e "${GREEN}✅ Setup complete!${NC}"
 echo ""
 echo "To start JobFlow:"
-echo "  npm run dev        # Start backend (port 4000) + frontend (port 4001)"
+echo "  npm run dev        # Start backend (port 4000) + frontend (port 3000)"
 echo ""
 echo "Then open:"
-echo "  Frontend:  http://localhost:4001"
+echo "  Frontend:  http://localhost:3000"
 echo "  Backend:  http://localhost:4000"
 echo ""
